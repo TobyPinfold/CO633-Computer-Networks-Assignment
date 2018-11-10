@@ -69,12 +69,13 @@ public class MessageSender
         // Note the terminal messages aren't part of the protocol,
         // they're just included to help with testing and debugging
 
-        terminal.printlnDiag("  sendMessage starting (message = \"" + message + "\")");
-
         // YOUR CODE SHOULD START HERE ---------------------------------
         // No changes are needed to the statements above
 
         try {
+
+            message = message.replaceAll(":", "::");
+            terminal.printlnDiag("  sendMessage starting (message = \"" + message + "\")");
 
             // The following statement shows how the frame sender is invoked.
             // At the moment it just passes a fixed string.
@@ -134,7 +135,7 @@ public class MessageSender
 
         boolean isMessageEmpty = message.isEmpty();
 
-        String checksum = !isMessageEmpty ? generateChecksum(message.toCharArray()) : "000";
+        String checksum = !isMessageEmpty ? generateChecksum(message) : "000";
         String EoMFlag = isEnd ? "." : "+";
         String frame = "(" + message + ":" + checksum + ":" + EoMFlag + ")";
 
@@ -143,12 +144,14 @@ public class MessageSender
 
 
 
-    private String generateChecksum(char[] message) {
+    private String generateChecksum(String message) {
+
+        char[] messageAsArray = message.replaceAll("::", ":").toCharArray();
 
         int sum = 0;
 
-        for(int i =0; i < message.length; i++) {
-            sum += (int)message[i];
+        for(int i =0; i < messageAsArray.length; i++) {
+            sum += (int)messageAsArray[i];
         }
 
         String sumAsString = "" + sum;
@@ -160,7 +163,7 @@ public class MessageSender
         if(sumAsString.length() < 3) {
             int length = sumAsString.length();
             String padding = "";
-            for (int i = 3 -length; i > 0; i++) {
+            for (int i = 3 -length; i > 0; i--) {
                 padding += "0";
             }
 
@@ -177,10 +180,22 @@ public class MessageSender
 
         int sizeAllowed = (mtu - reservedFrameSpace);
 
-        for(int i = 0; i < message.length(); i += sizeAllowed) {
+
+        for(int i = 0; i < message.length(); i += sizeAllowed ? ) {
+
+
+            //TODO fix issue whereby a colon is skipped at the end due to the indexing
 
             boolean islastIndex = message.length() < i + sizeAllowed;
+
             int endRange = islastIndex ? message.length() : i+sizeAllowed;
+
+            boolean isEndColonAPair = message.substring(endRange-1, endRange).equals("::");
+
+            if(!isEndColonAPair) {
+                endRange--;
+            }
+
             String splitMessage = message.substring(i, endRange);
 
             messages.add(splitMessage);
